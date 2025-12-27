@@ -9,8 +9,18 @@
   <h1>Sudoku Game</h1>
   <div id="sudoku-board"></div>
   <div class="controls">
-    <button id="new-game">New Game</button>
-    <button id="check-solution">Check Solution</button>
+    <div class="control-group">
+      <label for="difficulty-select">Difficulty:</label>
+      <select id="difficulty-select">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <button id="new-game">New Game</button>
+      <button id="check-solution">Check Solution</button>
+    </div>
     <span id="message"></span>
   </div>
   <script src="/static/main.js"></script>

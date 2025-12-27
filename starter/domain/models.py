@@ -51,8 +51,20 @@ class GameState:
     current_board: SudokuBoard
     difficulty: str = "medium"
     moves: int = 0
+    locked_cells: List[tuple] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
+    
+    def __post_init__(self):
+        """Initialize locked cells from puzzle if not set."""
+        if not self.locked_cells:
+            # Mark all prefilled cells (non-zero values) as locked
+            self.locked_cells = [
+                (row, col)
+                for row in range(BOARD_SIZE)
+                for col in range(BOARD_SIZE)
+                if self.puzzle.get_cell(row, col) != EMPTY
+            ]
     
     def is_complete(self) -> bool:
         """Check if puzzle is completely filled."""

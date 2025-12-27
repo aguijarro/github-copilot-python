@@ -38,13 +38,16 @@ def create_routes_blueprint(service: GameService) -> Blueprint:
         """Start a new game.
         
         Query parameters:
-            clues: Number of visible clues (17-81, default 35)
+            difficulty: Difficulty level (easy, medium, hard - default medium)
+            clues: Number of visible clues (17-81, overrides difficulty if set)
         
         Returns:
             JSON with puzzle and game_id
         """
         try:
-            req = NewGameRequest.from_args(request.args.get('clues'))
+            clues_arg = request.args.get('clues')
+            difficulty_arg = request.args.get('difficulty')
+            req = NewGameRequest.from_args(clues_arg, difficulty_arg)
             game_id = str(uuid.uuid4())
             puzzle = game_service.start_new_game(game_id, req.clues)
             

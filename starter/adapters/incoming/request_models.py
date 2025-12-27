@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import List
 
 from domain.exceptions import ValidationError
+from config import DIFFICULTY_LEVELS
+import random
 
 
 @dataclass
@@ -13,11 +15,12 @@ class NewGameRequest:
     clues: int
     
     @staticmethod
-    def from_args(clues_arg) -> "NewGameRequest":
+    def from_args(clues_arg, difficulty_arg=None) -> "NewGameRequest":
         """Create from Flask request args.
         
         Args:
-            clues_arg: Query parameter value
+            clues_arg: Query parameter for explicit clue count
+            difficulty_arg: Query parameter for difficulty level (easy, medium, hard)
         
         Returns:
             NewGameRequest instance
@@ -26,12 +29,25 @@ class NewGameRequest:
             ValidationError: If validation fails
         """
         try:
-            clues = int(clues_arg) if clues_arg else 35
-            if not (17 <= clues <= 81):
-                raise ValueError("Clues must be between 17 and 81")
+            # If difficulty is specified, use it to determine clues
+            if difficulty_arg:
+                if difficulty_arg not in DIFFICULTY_LEVELS:
+                    raise ValueError(f"Invalid difficulty. Must be one of: {', '.join(DIFFICULTY_LEVELS.keys())}")
+                min_clues, max_clues = DIFFICULTY_LEVELS[difficulty_arg]
+                clues = random.randint(min_clues, max_clues)
+            # Otherwise use explicit clues parameter
+            elif clues_arg:
+                clues = int(clues_arg)
+                if not (17 <= clues <= 81):
+                    raise ValueError("Clues must be between 17 and 81")
+            # Default to medium difficulty
+            else:
+                min_clues, max_clues = DIFFICULTY_LEVELS['medium']
+                clues = random.randint(min_clues, max_clues)
+            
             return NewGameRequest(clues=clues)
         except (ValueError, TypeError) as e:
-            raise ValidationError(f"Invalid clues parameter: {str(e)}")
+            raise ValidationError(f"Invalid game parameters: {str(e)}")
 
 
 @dataclass

@@ -1,6 +1,8 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 let puzzle = [];
+let gameId = null;
+let lockedCells = new Set();
 
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -16,6 +18,13 @@ function createBoardElement() {
       input.dataset.row = i;
       input.dataset.col = j;
       input.addEventListener('input', (e) => {
+        // Prevent input if cell is locked
+        const cellKey = `${i}-${j}`;
+        if (lockedCells.has(cellKey)) {
+          e.preventDefault();
+          e.target.value = puzzle[i][j];
+          return;
+        }
         const val = e.target.value.replace(/[^1-9]/g, '');
         e.target.value = val;
       });
@@ -27,6 +36,7 @@ function createBoardElement() {
 
 function renderPuzzle(puz) {
   puzzle = puz;
+  lockedCells.clear();
   createBoardElement();
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
@@ -39,6 +49,7 @@ function renderPuzzle(puz) {
         inp.value = val;
         inp.disabled = true;
         inp.className += ' prefilled';
+        lockedCells.add(`${i}-${j}`);
       } else {
         inp.value = '';
         inp.disabled = false;
@@ -48,8 +59,10 @@ function renderPuzzle(puz) {
 }
 
 async function newGame() {
-  const res = await fetch('/new');
+  const difficulty = document.getElementById('difficulty-select').value;
+  const res = await fetch(`/new?difficulty=${difficulty}`);
   const data = await res.json();
+  gameId = data.game_id;
   renderPuzzle(data.puzzle);
   document.getElementById('message').innerText = '';
 }
@@ -69,7 +82,7 @@ async function checkSolution() {
   const res = await fetch('/check', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({board})
+    body: JSON.stringify({board, game_id: gameId})
   });
   const data = await res.json();
   const msg = document.getElementById('message');

@@ -79,7 +79,7 @@ class GameService:
         if not game_state:
             raise GameNotFoundError(f"Game {game_id} not found")
         
-        # Find incorrect cells
+        # Find incorrect cells by comparing with solution
         solution_grid = game_state.solution.grid
         incorrect_cells = find_incorrect_cells(board, solution_grid)
         
