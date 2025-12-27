@@ -2,7 +2,9 @@
 
 import pytest
 import json
-from sudoku_logic import create_empty_board, EMPTY
+import uuid
+from domain.models import EMPTY
+from domain.exceptions import GameNotFoundError
 
 
 @pytest.mark.integration
@@ -25,6 +27,7 @@ class TestFlaskRoutes:
         assert response.status_code == 200
         data = json.loads(response.data)
         assert 'puzzle' in data
+        assert 'game_id' in data
         assert isinstance(data['puzzle'], list)
 
     def test_new_game_with_default_clues(self, client):
@@ -33,6 +36,7 @@ class TestFlaskRoutes:
         assert response.status_code == 200
         data = json.loads(response.data)
         assert 'puzzle' in data
+        assert 'game_id' in data
 
     def test_new_game_with_custom_clues(self, client):
         """Test new game with custom clue count."""
@@ -53,54 +57,119 @@ class TestFlaskRoutes:
         assert all(len(row) == 9 for row in puzzle)
         assert all(isinstance(cell, int) for row in puzzle for cell in row)
 
+    def test_new_game_invalid_clues_too_low(self, client):
+        """Test new game with too few clues."""
+        response = client.get('/new?clues=5')
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_new_game_invalid_clues_too_high(self, client):
+        """Test new game with too many clues."""
+        response = client.get('/new?clues=100')
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_new_game_returns_unique_game_ids(self, client):
+        """Test that multiple games get unique IDs."""
+        response1 = client.get('/new?clues=35')
+        data1 = json.loads(response1.data)
+        
+        response2 = client.get('/new?clues=35')
+        data2 = json.loads(response2.data)
+        
+        assert data1['game_id'] != data2['game_id']
+
 
 @pytest.mark.integration
 class TestCheckSolutionRoute:
     """Tests for the check solution route."""
 
-    def test_check_solution_without_game_in_progress(self, client):
-        """Test check solution when no game is active."""
-        board = create_empty_board()
+    def test_check_solution_game_not_found(self, client, sample_solution):
+        """Test check solution when game doesn't exist."""
         response = client.post(
             '/check',
-            data=json.dumps({'board': board}),
+            data=json.dumps({
+                'game_id': 'nonexistent',
+                'board': sample_solution
+            }),
+            content_type='application/json',
+        )
+        assert response.status_code == 404
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_check_solution_missing_board(self, client):
+        """Test check solution with missing board parameter."""
+        response = client.post(
+            '/check',
+            data=json.dumps({'game_id': str(uuid.uuid4())}),
             content_type='application/json',
         )
         assert response.status_code == 400
         data = json.loads(response.data)
         assert 'error' in data
 
-    def test_check_solution_with_active_game(self, client):
-        """Test check solution with an active game."""
-        # Start a new game first
-        client.get('/new?clues=35')
+    def test_check_solution_invalid_board_structure(self, client):
+        """Test check solution with invalid board structure."""
+        game_response = client.get('/new?clues=35')
+        game_data = json.loads(game_response.data)
+        game_id = game_data['game_id']
         
-        # Create a board (doesn't matter if correct for this test)
-        board = create_empty_board()
         response = client.post(
             '/check',
-            data=json.dumps({'board': board}),
+            data=json.dumps({
+                'game_id': game_id,
+                'board': [[1, 2, 3]]  # Invalid 3x3 board
+            }),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_check_solution_with_correct_board(self, client, sample_solution):
+        """Test check solution with a complete valid board."""
+        game_response = client.get('/new?clues=35')
+        game_data = json.loads(game_response.data)
+        game_id = game_data['game_id']
+        
+        response = client.post(
+            '/check',
+            data=json.dumps({
+                'game_id': game_id,
+                'board': sample_solution
+            }),
             content_type='application/json',
         )
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert 'incorrect' in data
-        assert isinstance(data['incorrect'], list)
+        assert 'is_correct' in data
+        assert isinstance(data['is_correct'], bool)
 
-    def test_check_solution_returns_json(self, client):
-        """Test that check solution returns valid JSON."""
-        # Create a game
-        client.get('/new?clues=35')
+    def test_check_solution_returns_incorrect_cells(self, client, sample_solution):
+        """Test that check solution identifies incorrect cells."""
+        game_response = client.get('/new?clues=35')
+        game_data = json.loads(game_response.data)
+        game_id = game_data['game_id']
         
-        board = create_empty_board()
+        # Create a board with wrong value
+        wrong_board = [row[:] for row in sample_solution]
+        wrong_board[0][0] = 9
+        
         response = client.post(
             '/check',
-            data=json.dumps({'board': board}),
+            data=json.dumps({
+                'game_id': game_id,
+                'board': wrong_board
+            }),
             content_type='application/json',
         )
-        # Should be able to parse as JSON
+        assert response.status_code == 200
         data = json.loads(response.data)
-        assert isinstance(data, dict)
+        assert 'is_correct' in data
+        assert 'incorrect' in data
 
 
 @pytest.mark.unit
@@ -117,3 +186,7 @@ class TestFlaskConfiguration:
         assert '/' in routes
         assert '/new' in routes
         assert '/check' in routes
+
+    def test_app_blueprint_registered(self, flask_app):
+        """Test that routes blueprint is registered."""
+        assert len(flask_app.blueprints) > 0

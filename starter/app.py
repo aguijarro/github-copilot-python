@@ -1,39 +1,49 @@
-from flask import Flask, render_template, jsonify, request
-import sudoku_logic
+"""Sudoku game application - Hexagonal Architecture.
 
-app = Flask(__name__)
+Entry point for Flask application with dependency injection setup.
+"""
 
-# Keep a simple in-memory store for current puzzle and solution
-CURRENT = {
-    'puzzle': None,
-    'solution': None
-}
+from flask import Flask
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+from adapters.incoming.http_routes import create_routes_blueprint
+from adapters.out.puzzle_generator import RandomPuzzleGenerator
+from adapters.out.memory_repository import MemoryGameRepository
+from services.game_service import GameService
 
-@app.route('/new')
-def new_game():
-    clues = int(request.args.get('clues', 35))
-    puzzle, solution = sudoku_logic.generate_puzzle(clues)
-    CURRENT['puzzle'] = puzzle
-    CURRENT['solution'] = solution
-    return jsonify({'puzzle': puzzle})
 
-@app.route('/check', methods=['POST'])
-def check_solution():
-    data = request.json
-    board = data.get('board')
-    solution = CURRENT.get('solution')
-    if solution is None:
-        return jsonify({'error': 'No game in progress'}), 400
-    incorrect = []
-    for i in range(sudoku_logic.SIZE):
-        for j in range(sudoku_logic.SIZE):
-            if board[i][j] != solution[i][j]:
-                incorrect.append([i, j])
-    return jsonify({'incorrect': incorrect})
+def create_app(config: dict = None) -> Flask:
+    """Application factory for creating Flask app with dependency injection.
+    
+    Args:
+        config: Optional configuration dictionary
+    
+    Returns:
+        Configured Flask application
+    """
+    app = Flask(__name__, 
+                template_folder='templates',
+                static_folder='static')
+    
+    if config:
+        app.config.update(config)
+    
+    # Create adapters (implementations of ports)
+    puzzle_generator = RandomPuzzleGenerator()
+    game_repository = MemoryGameRepository()
+    
+    # Create service with dependency injection
+    game_service = GameService(puzzle_generator, game_repository)
+    
+    # Register routes with service injected
+    routes_bp = create_routes_blueprint(game_service)
+    app.register_blueprint(routes_bp)
+    
+    return app
+
 
 if __name__ == '__main__':
+    app = create_app({
+        'DEBUG': True,
+        'TESTING': False
+    })
     app.run(debug=True)
