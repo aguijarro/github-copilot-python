@@ -3,6 +3,67 @@ const SIZE = 9;
 let puzzle = [];
 let gameId = null;
 let lockedCells = new Set();
+let conflictCells = new Set();
+let validationTimeout = null;
+
+function getCurrentBoard() {
+  const boardDiv = document.getElementById('sudoku-board');
+  const inputs = boardDiv.getElementsByTagName('input');
+  const board = [];
+  for (let i = 0; i < SIZE; i++) {
+    board[i] = [];
+    for (let j = 0; j < SIZE; j++) {
+      const idx = i * SIZE + j;
+      const val = inputs[idx].value;
+      board[i][j] = val ? parseInt(val, 10) : 0;
+    }
+  }
+  return board;
+}
+
+async function validateBoard() {
+  const board = getCurrentBoard();
+  
+  try {
+    const res = await fetch('/validate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({board})
+    });
+    
+    const data = await res.json();
+    
+    // Clear previous conflict highlighting
+    conflictCells.forEach(cellKey => {
+      const [row, col] = cellKey.split('-').map(Number);
+      const idx = row * SIZE + col;
+      const boardDiv = document.getElementById('sudoku-board');
+      const inputs = boardDiv.getElementsByTagName('input');
+      const inp = inputs[idx];
+      if (inp) {
+        inp.classList.remove('conflict');
+      }
+    });
+    conflictCells.clear();
+    
+    // Add new conflict highlighting
+    if (data.has_conflicts && data.conflicts) {
+      data.conflicts.forEach(([row, col]) => {
+        const cellKey = `${row}-${col}`;
+        conflictCells.add(cellKey);
+        const idx = row * SIZE + col;
+        const boardDiv = document.getElementById('sudoku-board');
+        const inputs = boardDiv.getElementsByTagName('input');
+        const inp = inputs[idx];
+        if (inp && !inp.disabled) {
+          inp.classList.add('conflict');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Validation error:', error);
+  }
+}
 
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -27,6 +88,10 @@ function createBoardElement() {
         }
         const val = e.target.value.replace(/[^1-9]/g, '');
         e.target.value = val;
+        
+        // Validate board after input (debounced)
+        clearTimeout(validationTimeout);
+        validationTimeout = setTimeout(validateBoard, 200);
       });
       rowDiv.appendChild(input);
     }
