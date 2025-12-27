@@ -346,4 +346,85 @@ def create_routes_blueprint(service: GameService) -> Blueprint:
             error = ErrorResponse(error='Failed to load scores', code='SCORES_ERROR')
             return jsonify(error.to_dict()), 500
     
+    @bp.route('/api/scores', methods=['POST'])
+    def save_score():
+        """Save a new score to the scoreboard.
+        
+        Expected JSON body:
+        {
+            "name": "Player Name",
+            "time": 300,
+            "difficulty": "medium",
+            "hints": 2
+        }
+        
+        Returns:
+            JSON with saved score or error
+        """
+        try:
+            from models.scoreboard import Scoreboard
+            
+            data = request.get_json()
+            
+            if not data:
+                error = ErrorResponse(error='Request body must be JSON', code='INVALID_REQUEST')
+                return jsonify(error.to_dict()), 400
+            
+            # Extract and validate fields
+            name = data.get('name', '').strip()
+            time = data.get('time')
+            difficulty = data.get('difficulty', '').lower()
+            hints = data.get('hints')
+            
+            # Validate name
+            if not name or len(name) < 1 or len(name) > 20:
+                error = ErrorResponse(
+                    error='Name must be 1-20 characters',
+                    code='INVALID_NAME'
+                )
+                return jsonify(error.to_dict()), 400
+            
+            # Validate time
+            if time is None or not isinstance(time, (int, float)) or time < 0:
+                error = ErrorResponse(
+                    error='Time must be a non-negative number',
+                    code='INVALID_TIME'
+                )
+                return jsonify(error.to_dict()), 400
+            
+            # Validate difficulty
+            if difficulty not in ('easy', 'medium', 'hard', 'expert'):
+                error = ErrorResponse(
+                    error='Invalid difficulty level',
+                    code='INVALID_DIFFICULTY'
+                )
+                return jsonify(error.to_dict()), 400
+            
+            # Validate hints
+            if hints is None or not isinstance(hints, int) or hints < 0:
+                error = ErrorResponse(
+                    error='Hints must be a non-negative integer',
+                    code='INVALID_HINTS'
+                )
+                return jsonify(error.to_dict()), 400
+            
+            # Save score
+            scoreboard = Scoreboard()
+            score = scoreboard.add_score(
+                name=name,
+                time=int(time),
+                difficulty=difficulty,
+                hints=hints
+            )
+            
+            return jsonify(score.to_dict()), 201
+        
+        except ValueError as e:
+            error = ErrorResponse(error=str(e), code='VALIDATION_ERROR')
+            return jsonify(error.to_dict()), 400
+        
+        except Exception as e:
+            error = ErrorResponse(error='Failed to save score', code='SERVER_ERROR')
+            return jsonify(error.to_dict()), 500
+    
     return bp

@@ -1,11 +1,33 @@
 <!doctype html>
-<html>
+<html id="root">
 <head>
   <meta charset="utf-8">
   <title>Sudoku Game</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script>
+    // Initialize theme from localStorage or system preference
+    const initializeTheme = () => {
+      const savedTheme = localStorage.getItem('sudoku-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      
+      if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+    };
+    
+    // Initialize theme before page renders
+    initializeTheme();
+  </script>
 </head>
 <body>
+  <div class="theme-toggle-container">
+    <button id="theme-toggle" class="theme-toggle" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+      <span class="theme-icon">🌙</span>
+    </button>
+  </div>
   <h1>Sudoku Game</h1>
   <div id="timer" class="timer">⏱️ 00:00</div>
   <div id="sudoku-board"></div>
@@ -54,6 +76,29 @@
       </div>
       <div class="modal-footer celebration-footer">
         <button id="play-again-btn" class="modal-btn celebration-btn">🎮 Play Again</button>
+      </div>
+    </div>
+  </div>
+  <div id="name-input-modal" class="modal">
+    <div class="modal-content name-input">
+      <span class="close-btn">&times;</span>
+      <div class="modal-header name-input-header">
+        <h2>📝 Save Your Score</h2>
+        <p class="modal-text">Enter your name to save your score</p>
+      </div>
+      <div class="modal-body name-input-body">
+        <input 
+          type="text" 
+          id="player-name-input" 
+          class="name-input-field" 
+          placeholder="Enter your name (1-20 characters)"
+          maxlength="20"
+        />
+        <div id="name-error" class="name-error"></div>
+      </div>
+      <div class="modal-footer name-input-footer">
+        <button id="cancel-name-btn" class="modal-btn cancel-btn">Cancel</button>
+        <button id="submit-name-btn" class="modal-btn submit-btn">Save Score</button>
       </div>
     </div>
   </div>

@@ -12,6 +12,8 @@ let checkHighlightTimeout = null;
 let checkConflictCells = new Set();
 let timerInterval = null;
 let elapsedSeconds = 0;
+let lastGameStats = null; // Store game stats for score submission
+
 
 function getCurrentBoard() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -286,7 +288,15 @@ function showCongratulationsModal() {
   const elapsedMs = Date.now() - gameStartTime;
   const minutes = Math.floor(elapsedMs / 60000);
   const seconds = Math.floor((elapsedMs % 60000) / 1000);
+  const totalSeconds = minutes * 60 + seconds;
   const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  
+  // Store game stats for score submission
+  lastGameStats = {
+    time: totalSeconds,
+    difficulty: currentDifficulty,
+    hints: hintsUsed
+  };
   
   // Update modal content with game stats
   document.getElementById('modal-time').textContent = timeString;
@@ -295,12 +305,113 @@ function showCongratulationsModal() {
   document.getElementById('modal-hints').textContent = hintsUsed.toString();
   
   modal.classList.add('show');
+  
+  // Show name input modal after a delay
+  setTimeout(() => {
+    showNameInputModal();
+  }, 500);
 }
 
 function closeCongratulationsModal() {
   const modal = document.getElementById('congratulations-modal');
   modal.classList.remove('show');
 }
+
+function showNameInputModal() {
+  const modal = document.getElementById('name-input-modal');
+  const input = document.getElementById('player-name-input');
+  const errorDiv = document.getElementById('name-error');
+  
+  // Clear previous input and error
+  input.value = '';
+  errorDiv.textContent = '';
+  input.focus();
+  
+  modal.classList.add('show');
+}
+
+function closeNameInputModal() {
+  const modal = document.getElementById('name-input-modal');
+  const input = document.getElementById('player-name-input');
+  const errorDiv = document.getElementById('name-error');
+  
+  modal.classList.remove('show');
+  input.value = '';
+  errorDiv.textContent = '';
+}
+
+function validatePlayerName(name) {
+  const trimmed = name.trim();
+  
+  if (!trimmed) {
+    return { valid: false, error: 'Name cannot be empty' };
+  }
+  
+  if (trimmed.length < 1) {
+    return { valid: false, error: 'Name must be at least 1 character' };
+  }
+  
+  if (trimmed.length > 20) {
+    return { valid: false, error: 'Name must be 20 characters or less' };
+  }
+  
+  return { valid: true };
+}
+
+async function submitScore(playerName) {
+  if (!lastGameStats) {
+    console.error('Game stats not available');
+    return;
+  }
+  
+  const trimmedName = playerName.trim();
+  
+  // Validate name
+  const validation = validatePlayerName(trimmedName);
+  if (!validation.valid) {
+    const errorDiv = document.getElementById('name-error');
+    errorDiv.textContent = validation.error;
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/scores', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: trimmedName,
+        time: lastGameStats.time,
+        difficulty: lastGameStats.difficulty,
+        hints: lastGameStats.hints
+      })
+    });
+    
+    if (!response.ok) {
+      const data = await response.json();
+      const errorDiv = document.getElementById('name-error');
+      errorDiv.textContent = data.error || 'Failed to save score';
+      return;
+    }
+    
+    // Success - close modal and refresh scoreboard
+    closeNameInputModal();
+    loadScoreboard();
+    
+    // Show success message briefly
+    const msgElement = document.getElementById('message');
+    msgElement.textContent = `✓ Score saved for ${trimmedName}!`;
+    msgElement.style.color = '#388e3c';
+    setTimeout(() => {
+      msgElement.textContent = '';
+    }, 3000);
+    
+  } catch (error) {
+    console.error('Error submitting score:', error);
+    const errorDiv = document.getElementById('name-error');
+    errorDiv.textContent = 'Error saving score. Please try again.';
+  }
+}
+
 
 async function getHint() {
   const board = getCurrentBoard();
@@ -409,12 +520,46 @@ window.addEventListener('load', () => {
   
   playAgainBtn.addEventListener('click', () => {
     closeCongratulationsModal();
+    closeNameInputModal();
     newGame();
   });
   
   window.addEventListener('click', (event) => {
     if (event.target === modal) {
       closeCongratulationsModal();
+    }
+  });
+  
+  // Name input modal listeners
+  const nameInputModal = document.getElementById('name-input-modal');
+  const nameCloseBtn = nameInputModal.querySelector('.close-btn');
+  const cancelNameBtn = document.getElementById('cancel-name-btn');
+  const submitNameBtn = document.getElementById('submit-name-btn');
+  const playerNameInput = document.getElementById('player-name-input');
+  
+  nameCloseBtn.addEventListener('click', () => {
+    closeNameInputModal();
+  });
+  
+  cancelNameBtn.addEventListener('click', () => {
+    closeNameInputModal();
+  });
+  
+  submitNameBtn.addEventListener('click', () => {
+    const playerName = playerNameInput.value;
+    submitScore(playerName);
+  });
+  
+  playerNameInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+      const playerName = playerNameInput.value;
+      submitScore(playerName);
+    }
+  });
+  
+  window.addEventListener('click', (event) => {
+    if (event.target === nameInputModal) {
+      closeNameInputModal();
     }
   });
   
@@ -504,3 +649,51 @@ function escapeHtml(text) {
   };
   return text.replace(/[&<>"']/g, char => map[char]);
 }
+
+// Theme Toggle Functionality
+function initializeThemeToggle() {
+  const themeToggle = document.getElementById('theme-toggle');
+  if (!themeToggle) return;
+
+  // Update button text based on current theme
+  const updateThemeButton = () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    themeToggle.querySelector('.theme-icon').textContent = isDark ? '☀️' : '🌙';
+  };
+
+  // Toggle theme on button click
+  themeToggle.addEventListener('click', () => {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    
+    if (isDark) {
+      html.removeAttribute('data-theme');
+      localStorage.setItem('sudoku-theme', 'light');
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      localStorage.setItem('sudoku-theme', 'dark');
+    }
+    
+    updateThemeButton();
+  });
+
+  // Initial button state
+  updateThemeButton();
+
+  // Listen for system preference changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    const savedTheme = localStorage.getItem('sudoku-theme');
+    // Only update if no saved preference
+    if (!savedTheme) {
+      if (e.matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      updateThemeButton();
+    }
+  });
+}
+
+// Initialize theme toggle when DOM is ready
+document.addEventListener('DOMContentLoaded', initializeThemeToggle);

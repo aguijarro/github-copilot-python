@@ -1,6 +1,53 @@
+/* CSS Variables for Light/Dark Theme Support */
+:root {
+    /* Light Mode Defaults */
+    --bg-color: #f4f4f4;
+    --text-color: #333;
+    --cell-bg: #fafafa;
+    --cell-prefilled-bg: #e0e0e0;
+    --border-color: #bbb;
+    --button-bg: #1976d2;
+    --button-hover-bg: #1565c0;
+    --highlight-color: #e0f7fa;
+    --primary-color: #1976d2;
+    --success-color: #388e3c;
+    --danger-color: #d32f2f;
+    --warning-color: #ff9800;
+    --modal-bg: #fff;
+    --modal-border: #e0e0e0;
+    --table-header-bg: #1976d2;
+    --table-header-text: #fff;
+    --table-odd-row-bg: #f5f5f5;
+    --table-even-row-bg: #ffffff;
+    --table-hover-bg: #e3f2fd;
+}
+
+/* Dark Mode Theme - WCAG AA Compliant (4.5:1 contrast ratio for text) */
+[data-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --text-color: #e8e8e8;
+    --cell-bg: #2d2d2d;
+    --cell-prefilled-bg: #3a3a3a;
+    --border-color: #666;
+    --button-bg: #1e88e5;
+    --button-hover-bg: #1565c0;
+    --highlight-color: #1a3f52;
+    --primary-color: #2196f3;
+    --success-color: #66bb6a;
+    --danger-color: #ef5350;
+    --warning-color: #ffa726;
+    --modal-bg: #252525;
+    --modal-border: #555;
+    --table-header-bg: #1565c0;
+    --table-header-text: #f0f0f0;
+    --table-odd-row-bg: #2a2a2a;
+    --table-even-row-bg: #333;
+    --table-hover-bg: #3d3d3d;
+}
+
 body {
     font-family: Arial, sans-serif;
-    background: #f4f4f4;
+    background: var(--bg-color);
     text-align: center;
     margin: 0;
     padding: 0;
@@ -8,13 +55,13 @@ body {
 
 h1 {
     margin-top: 30px;
-    color: #333;
+    color: var(--text-color);
 }
 
 #timer {
     font-size: 24px;
     font-weight: bold;
-    color: #1976d2;
+    color: var(--primary-color);
     margin: 10px auto;
     min-width: 120px;
 }
@@ -22,8 +69,8 @@ h1 {
 #sudoku-board {
     display: inline-block;
     margin: 30px auto;
-    border: 4px solid #333;
-    background: #fff;
+    border: 4px solid var(--text-color);
+    background: var(--modal-bg);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
@@ -34,22 +81,22 @@ h1 {
 .sudoku-cell {
     width: 40px;
     height: 40px;
-    border: 1px solid #bbb;
+    border: 1px solid var(--border-color);
     text-align: center;
     font-size: 20px;
     outline: none;
-    background: #fafafa;
+    background: var(--cell-bg);
     transition: background 0.2s;
 }
 
 .sudoku-cell:focus {
-    background: #e0f7fa;
+    background: var(--highlight-color);
 }
 
 .sudoku-cell.prefilled {
-    background: #e0e0e0;
+    background: var(--cell-prefilled-bg);
     font-weight: bold;
-    color: #333;
+    color: var(--text-color);
 }
 
 .sudoku-cell.incorrect {
@@ -57,7 +104,7 @@ h1 {
 }
 
 .sudoku-cell.conflict {
-    border: 3px solid #d32f2f;
+    border: 3px solid var(--danger-color);
 }
 
 .sudoku-cell.check-conflict {
@@ -88,7 +135,7 @@ h1 {
     padding: 10px 20px;
     font-size: 16px;
     border: none;
-    background: #ff9800;
+    background: var(--warning-color);
     color: #fff;
     border-radius: 4px;
     cursor: pointer;
@@ -108,7 +155,7 @@ h1 {
 .hint-counter {
     font-size: 16px;
     font-weight: bold;
-    color: #ff9800;
+    color: var(--warning-color);
 }
 
 .controls {
@@ -124,27 +171,28 @@ h1 {
 label {
     margin-right: 10px;
     font-size: 16px;
-    color: #333;
+    color: var(--text-color);
     vertical-align: middle;
 }
 
 select {
     padding: 8px 12px;
     font-size: 16px;
-    border: 1px solid #bbb;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
-    background: #fff;
+    background: var(--modal-bg);
     cursor: pointer;
     transition: border-color 0.2s;
+    color: var(--text-color);
 }
 
 select:hover {
-    border-color: #1976d2;
+    border-color: var(--primary-color);
 }
 
 select:focus {
     outline: none;
-    border-color: #1976d2;
+    border-color: var(--primary-color);
     box-shadow: 0 0 3px rgba(25, 118, 210, 0.3);
 }
 
@@ -153,7 +201,7 @@ button {
     margin: 0 8px;
     font-size: 16px;
     border: none;
-    background: #1976d2;
+    background: var(--button-bg);
     color: #fff;
     border-radius: 4px;
     cursor: pointer;
@@ -161,13 +209,13 @@ button {
 }
 
 button:hover {
-    background: #1565c0;
+    background: var(--button-hover-bg);
 }
 
 #message {
     margin-left: 20px;
     font-size: 16px;
-    color: #d32f2f;
+    color: var(--danger-color);
 }
 
 /* Modal Styles */
@@ -189,7 +237,7 @@ button:hover {
 }
 
 .modal-content {
-    background-color: #fff;
+    background-color: var(--modal-bg);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     max-width: 500px;
@@ -230,24 +278,24 @@ button:hover {
 }
 
 .close-btn:hover {
-    color: #333;
+    color: var(--text-color);
 }
 
 .modal-header {
     padding: 20px;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 2px solid var(--modal-border);
     text-align: center;
 }
 
 .modal-header.celebration-header {
-    background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
+    background: linear-gradient(135deg, var(--success-color) 0%, #4caf50 100%);
     border-bottom: 3px solid #FFD700;
     border-radius: 8px 8px 0 0;
 }
 
 .modal-header h2 {
     margin: 0;
-    color: #388e3c;
+    color: var(--success-color);
     font-size: 28px;
 }
 
@@ -271,19 +319,19 @@ button:hover {
 }
 
 .modal-body.celebration-body {
-    background: linear-gradient(to bottom, #f0f8f0, #ffffff);
+    background: linear-gradient(to bottom, #f0f8f0, var(--modal-bg));
 }
 
 .modal-body p {
     margin: 10px 0;
     font-size: 18px;
-    color: #333;
+    color: var(--text-color);
 }
 
 .modal-stats {
     margin-top: 20px;
     padding: 20px;
-    background-color: #f5f5f5;
+    background-color: var(--table-odd-row-bg);
     border-radius: 8px;
     border: 2px solid #e0f7e0;
 }
@@ -293,7 +341,7 @@ button:hover {
     justify-content: space-between;
     align-items: center;
     padding: 12px 0;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--modal-border);
     font-size: 16px;
 }
 
@@ -303,14 +351,14 @@ button:hover {
 
 .stat-label {
     font-weight: 600;
-    color: #388e3c;
+    color: var(--success-color);
     flex: 1;
     text-align: left;
 }
 
 .stat-value {
     font-weight: bold;
-    color: #1565c0;
+    color: var(--primary-color);
     font-size: 18px;
     flex: 1;
     text-align: right;
@@ -325,7 +373,7 @@ button:hover {
 .modal-footer {
     padding: 20px;
     text-align: center;
-    border-top: 2px solid #e0e0e0;
+    border-top: 2px solid var(--modal-border);
 }
 
 .modal-footer.celebration-footer {
@@ -337,7 +385,7 @@ button:hover {
 .modal-btn {
     padding: 12px 30px;
     font-size: 16px;
-    background-color: #388e3c;
+    background-color: var(--success-color);
     color: white;
     border: none;
     border-radius: 4px;
@@ -350,7 +398,7 @@ button:hover {
 }
 
 .modal-btn.celebration-btn {
-    background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
+    background: linear-gradient(135deg, var(--success-color) 0%, #4caf50 100%);
     padding: 14px 40px;
     font-size: 18px;
     font-weight: bold;
@@ -358,7 +406,7 @@ button:hover {
 }
 
 .modal-btn.celebration-btn:hover {
-    background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+    background: linear-gradient(135deg, #2e7d32 0%, var(--success-color) 100%);
     box-shadow: 0 6px 16px rgba(56, 142, 60, 0.5);
     transform: translateY(-2px);
 }
@@ -368,14 +416,14 @@ button:hover {
     margin: 40px auto;
     max-width: 600px;
     padding: 20px;
-    background: #fff;
+    background: var(--modal-bg);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .scoreboard-section h2 {
     margin-top: 0;
-    color: #333;
+    color: var(--text-color);
     font-size: 24px;
     margin-bottom: 20px;
     text-align: center;
@@ -388,8 +436,8 @@ button:hover {
 }
 
 .scoreboard-table thead {
-    background-color: #1976d2;
-    color: white;
+    background-color: var(--table-header-bg);
+    color: var(--table-header-text);
 }
 
 .scoreboard-table th {
@@ -400,20 +448,20 @@ button:hover {
 }
 
 .scoreboard-table tbody tr {
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--modal-border);
     transition: background-color 0.2s;
 }
 
 .scoreboard-table tbody tr:nth-child(odd) {
-    background-color: #f5f5f5;
+    background-color: var(--table-odd-row-bg);
 }
 
 .scoreboard-table tbody tr:nth-child(even) {
-    background-color: #ffffff;
+    background-color: var(--table-even-row-bg);
 }
 
 .scoreboard-table tbody tr:hover {
-    background-color: #e3f2fd;
+    background-color: var(--table-hover-bg);
     cursor: pointer;
 }
 
@@ -424,7 +472,7 @@ button:hover {
 
 .scoreboard-table .rank-cell {
     font-weight: bold;
-    color: #1976d2;
+    color: var(--primary-color);
     text-align: center;
     width: 50px;
 }
@@ -432,7 +480,7 @@ button:hover {
 .scoreboard-table .time-cell {
     font-family: monospace;
     font-weight: 500;
-    color: #d32f2f;
+    color: var(--danger-color);
 }
 
 .scoreboard-table .difficulty-cell {
@@ -440,15 +488,15 @@ button:hover {
 }
 
 .scoreboard-table .difficulty-easy {
-    color: #388e3c;
+    color: var(--success-color);
 }
 
 .scoreboard-table .difficulty-medium {
-    color: #ff9800;
+    color: var(--warning-color);
 }
 
 .scoreboard-table .difficulty-hard {
-    color: #d32f2f;
+    color: var(--danger-color);
 }
 
 .scoreboard-table .difficulty-expert {
@@ -470,3 +518,142 @@ button:hover {
     padding: 20px;
     font-style: italic;
 }
+
+/* Name Input Modal Styles */
+.modal-content.name-input {
+    background-color: var(--modal-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: 90%;
+}
+
+.modal-header.name-input-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 20px;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+}
+
+.modal-header.name-input-header h2 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+}
+
+.modal-text {
+    margin: 0;
+    font-size: 14px;
+    opacity: 0.95;
+}
+
+.modal-body.name-input-body {
+    padding: 30px 20px;
+}
+
+.name-input-field {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.3s;
+    font-family: Arial, sans-serif;
+    background-color: var(--modal-bg);
+    color: var(--text-color);
+}
+
+.name-input-field:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: #f5f9ff;
+}
+
+.name-input-field::placeholder {
+    color: #999;
+}
+
+.name-error {
+    color: var(--danger-color);
+    font-size: 13px;
+    margin-top: 8px;
+    min-height: 16px;
+}
+
+.modal-footer.name-input-footer {
+    display: flex;
+    gap: 10px;
+    padding: 15px 20px;
+    border-top: 1px solid var(--modal-border);
+    justify-content: flex-end;
+}
+
+.modal-btn.cancel-btn {
+    background-color: #999;
+    padding: 10px 20px;
+    font-size: 14px;
+}
+
+.modal-btn.cancel-btn:hover {
+    background-color: #777;
+}
+
+.modal-btn.submit-btn {
+    background-color: var(--success-color);
+    padding: 10px 25px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.modal-btn.submit-btn:hover {
+    background-color: #2e7d32;
+}
+
+.modal-btn.submit-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Theme Toggle Button */
+.theme-toggle-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+}
+
+.theme-toggle {
+    background: var(--button-bg);
+    color: var(--table-header-text);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle:hover {
+    background: var(--button-hover-bg);
+    transform: scale(1.1);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+.theme-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .theme-icon {
+    transform: rotate(20deg);
+}
+
