@@ -11,6 +11,14 @@ h1 {
     color: #333;
 }
 
+#timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: #1976d2;
+    margin: 10px auto;
+    min-width: 120px;
+}
+
 #sudoku-board {
     display: inline-block;
     margin: 30px auto;

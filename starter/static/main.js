@@ -10,6 +10,8 @@ let currentDifficulty = 'medium';
 let hintsUsed = 0;
 let checkHighlightTimeout = null;
 let checkConflictCells = new Set();
+let timerInterval = null;
+let elapsedSeconds = 0;
 
 function getCurrentBoard() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -138,6 +140,7 @@ async function newGame() {
   hintsUsed = 0;
   updateHintCounter();
   document.getElementById('hint-btn').disabled = false;
+  startTimer();
   renderPuzzle(data.puzzle);
   document.getElementById('message').innerText = '';
   closeCongratulationsModal();
@@ -156,6 +159,8 @@ async function checkComplete() {
     const data = await res.json();
     
     if (data.is_complete) {
+      // Stop timer when puzzle is complete
+      stopTimer();
       // Disable hint button when puzzle is complete
       document.getElementById('hint-btn').disabled = true;
       showCongratulationsModal();
@@ -167,6 +172,36 @@ async function checkComplete() {
 
 function updateHintCounter() {
   document.getElementById('hint-counter').textContent = `Hints: ${hintsUsed}`;
+}
+
+function updateTimer() {
+  const minutes = Math.floor(elapsedSeconds / 60);
+  const seconds = elapsedSeconds % 60;
+  const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  document.getElementById('timer').textContent = `⏱️ ${timeString}`;
+}
+
+function startTimer() {
+  elapsedSeconds = 0;
+  updateTimer();
+  
+  // Clear any existing timer
+  if (timerInterval) {
+    clearInterval(timerInterval);
+  }
+  
+  // Start new timer
+  timerInterval = setInterval(() => {
+    elapsedSeconds++;
+    updateTimer();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
 }
 
 async function checkConflicts() {
