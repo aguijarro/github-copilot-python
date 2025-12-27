@@ -418,6 +418,89 @@ window.addEventListener('load', () => {
     }
   });
   
+  // Load scoreboard on page load
+  loadScoreboard();
+  
   // initialize
   newGame();
 });
+
+/**
+ * Load and display scores from localStorage (data/scores.json)
+ */
+function loadScoreboard() {
+  fetch('/api/scores')
+    .then(response => response.json())
+    .then(scores => {
+      displayScoreboard(scores);
+    })
+    .catch(error => {
+      console.log('Scores not yet available:', error);
+      // Show empty state if file doesn't exist yet
+      displayScoreboard([]);
+    });
+}
+
+/**
+ * Display scores in the scoreboard table
+ * @param {Array} scores - Array of score objects from API
+ */
+function displayScoreboard(scores) {
+  const tbody = document.getElementById('scoreboard-body');
+  
+  if (!scores || scores.length === 0) {
+    // Show empty message
+    tbody.innerHTML = '<tr class="empty-message"><td colspan="5">No scores yet. Complete a puzzle to see scores here!</td></tr>';
+    return;
+  }
+  
+  // Clear existing rows
+  tbody.innerHTML = '';
+  
+  // Add top 10 scores
+  const topScores = scores.slice(0, 10);
+  topScores.forEach((score, index) => {
+    const row = document.createElement('tr');
+    row.className = index % 2 === 0 ? 'even-row' : 'odd-row';
+    
+    const formattedTime = formatTime(score.time);
+    const difficultyClass = `difficulty-${score.difficulty}`;
+    
+    row.innerHTML = `
+      <td class="rank-cell">${index + 1}</td>
+      <td class="name-cell">${escapeHtml(score.name)}</td>
+      <td class="time-cell">${formattedTime}</td>
+      <td class="difficulty-cell ${difficultyClass}">${score.difficulty}</td>
+      <td class="hints-cell">${score.hints}</td>
+    `;
+    
+    tbody.appendChild(row);
+  });
+}
+
+/**
+ * Format time in seconds to MM:SS format
+ * @param {number} seconds - Time in seconds
+ * @returns {string} Formatted time string
+ */
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+/**
+ * Escape HTML special characters to prevent XSS
+ * @param {string} text - Text to escape
+ * @returns {string} Escaped text
+ */
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, char => map[char]);
+}

@@ -321,4 +321,29 @@ def create_routes_blueprint(service: GameService) -> Blueprint:
             error = ErrorResponse(error='Internal server error', code='SERVER_ERROR')
             return jsonify(error.to_dict()), 500
     
+    @bp.route('/api/scores', methods=['GET'])
+    def get_scores():
+        """Get all scores from the scoreboard (localStorage).
+        
+        Returns:
+            JSON list of scores sorted by time (fastest first)
+        """
+        try:
+            from models.scoreboard import Scoreboard
+            scoreboard = Scoreboard()
+            scores = scoreboard.get_top_10()
+            
+            # Convert Score objects to dictionaries
+            scores_data = [score.to_dict() for score in scores]
+            
+            return jsonify(scores_data), 200
+        
+        except FileNotFoundError:
+            # No scores file yet
+            return jsonify([]), 200
+        
+        except Exception as e:
+            error = ErrorResponse(error='Failed to load scores', code='SCORES_ERROR')
+            return jsonify(error.to_dict()), 500
+    
     return bp
