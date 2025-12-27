@@ -6,6 +6,7 @@ from copy import deepcopy
 from utils.generator import SudokuGenerator
 from domain.models import BOARD_SIZE, EMPTY
 from domain.exceptions import PuzzleGenerationError
+from config import DIFFICULTY_LEVELS
 
 
 class TestSudokuGeneratorInitialization:
@@ -17,16 +18,17 @@ class TestSudokuGeneratorInitialization:
         assert generator is not None
     
     def test_difficulty_levels_exist(self):
-        """Test that all expected difficulty levels are defined."""
-        generator = SudokuGenerator()
+        """Test that all expected difficulty levels are defined in config."""
         expected_levels = {'easy', 'medium', 'hard', 'expert'}
-        assert set(generator.DIFFICULTY_LEVELS.keys()) == expected_levels
+        assert set(DIFFICULTY_LEVELS.keys()) == expected_levels
     
-    def test_difficulty_clue_counts(self):
-        """Test that difficulty levels have valid clue counts."""
-        generator = SudokuGenerator()
-        for level, clues in generator.DIFFICULTY_LEVELS.items():
-            assert 17 <= clues <= 81, f"Invalid clues for {level}: {clues}"
+    def test_difficulty_clue_ranges(self):
+        """Test that difficulty levels have valid clue ranges."""
+        for level, (min_clues, max_clues) in DIFFICULTY_LEVELS.items():
+            assert 17 <= min_clues <= max_clues <= 81, \
+                f"Invalid range for {level}: ({min_clues}, {max_clues})"
+            assert max_clues - min_clues >= 0, \
+                f"Invalid range for {level}: max < min"
 
 
 class TestGeneratePuzzle:
@@ -60,30 +62,21 @@ class TestGeneratePuzzle:
         
         # Count clues in puzzle
         clues_count = sum(1 for row in puzzle for cell in row if cell != EMPTY)
-        assert clues_count == generator.DIFFICULTY_LEVELS['medium']
+        min_clues, max_clues = DIFFICULTY_LEVELS['medium']
+        assert min_clues <= clues_count <= max_clues
     
     def test_puzzle_has_correct_clue_count(self):
-        """Test that generated puzzles have approximately correct clue counts."""
+        """Test that generated puzzles have correct clue counts within range."""
         generator = SudokuGenerator()
         
         for difficulty in ['easy', 'medium', 'hard', 'expert']:
             puzzle, _ = generator.generate_puzzle(difficulty)
             clues_count = sum(1 for row in puzzle for cell in row if cell != EMPTY)
-            expected_clues = generator.DIFFICULTY_LEVELS[difficulty]
+            min_clues, max_clues = DIFFICULTY_LEVELS[difficulty]
             
-            # Tolerance increases with difficulty due to computation complexity
-            # Easy: ±2, Medium: ±3, Hard: ±5, Expert: ±10 (harder to achieve exact)
-            if difficulty == 'easy':
-                tolerance = 2
-            elif difficulty == 'medium':
-                tolerance = 3
-            elif difficulty == 'hard':
-                tolerance = 5
-            else:  # expert
-                tolerance = 10
-            
-            assert abs(clues_count - expected_clues) <= tolerance, \
-                f"{difficulty}: expected ~{expected_clues}, got {clues_count}"
+            # Clue count should be within the specified range
+            assert min_clues <= clues_count <= max_clues, \
+                f"{difficulty}: expected {min_clues}-{max_clues}, got {clues_count}"
     
     def test_solution_is_complete(self):
         """Test that generated solution has no empty cells."""
@@ -331,5 +324,5 @@ class TestIntegration:
         elapsed = time.time() - start
         
         # Hard puzzles take longer but should still complete
-        assert elapsed < 60  # Generous timeout
+        assert elapsed < 90  # Generous timeout for harder puzzles
         assert puzzle is not None

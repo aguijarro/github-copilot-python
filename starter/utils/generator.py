@@ -6,6 +6,7 @@ from copy import deepcopy
 
 from domain.models import BOARD_SIZE, EMPTY
 from domain.exceptions import PuzzleGenerationError
+from config import DIFFICULTY_LEVELS
 
 
 class SudokuGenerator:
@@ -13,15 +14,13 @@ class SudokuGenerator:
     
     This class provides methods to generate Sudoku puzzles at various difficulty levels
     with the guarantee that each puzzle has exactly one unique solution.
-    """
     
-    # Difficulty levels mapping to clue counts
-    DIFFICULTY_LEVELS = {
-        'easy': 50,
-        'medium': 35,
-        'hard': 25,
-        'expert': 17
-    }
+    Difficulty levels and clue ranges are defined in config.py:
+    - easy: 40-45 prefilled cells
+    - medium: 30-35 prefilled cells
+    - hard: 25-28 prefilled cells
+    - expert: 17-20 prefilled cells
+    """
     
     def __init__(self):
         """Initialize the Sudoku generator."""
@@ -35,6 +34,12 @@ class SudokuGenerator:
         
         Uses a backtracking algorithm to fill a solution board, then removes clues
         while ensuring the puzzle maintains a unique solution.
+        
+        The number of prefilled cells varies randomly within the difficulty range:
+        - easy: 40-45 prefilled cells
+        - medium: 30-35 prefilled cells
+        - hard: 25-28 prefilled cells
+        - expert: 17-20 prefilled cells
         
         Args:
             difficulty: One of 'easy', 'medium', 'hard', or 'expert'.
@@ -55,12 +60,14 @@ class SudokuGenerator:
             >>> len(puzzle) == 9 and len(puzzle[0]) == 9
             True
         """
-        if difficulty not in self.DIFFICULTY_LEVELS:
+        if difficulty not in DIFFICULTY_LEVELS:
             raise ValueError(
-                f"Invalid difficulty. Choose from: {list(self.DIFFICULTY_LEVELS.keys())}"
+                f"Invalid difficulty. Choose from: {list(DIFFICULTY_LEVELS.keys())}"
             )
         
-        target_clues = self.DIFFICULTY_LEVELS[difficulty]
+        # Get difficulty range and randomly select clue count within range
+        min_clues, max_clues = DIFFICULTY_LEVELS[difficulty]
+        target_clues = random.randint(min_clues, max_clues)
         
         try:
             # Generate a complete valid solution
