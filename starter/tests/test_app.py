@@ -172,7 +172,153 @@ class TestCheckSolutionRoute:
         assert 'incorrect' in data
 
 
-@pytest.mark.unit
+@pytest.mark.integration
+class TestValidateRoute:
+    """Tests for board validation endpoint."""
+
+    def test_validate_board_with_no_conflicts(self, client):
+        """Test validate endpoint with a conflict-free board."""
+        # Create a valid partial board with no conflicts
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 5
+        board[1][0] = 3
+        board[2][0] = 7
+        
+        response = client.post(
+            '/validate',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'has_conflicts' in data
+        assert data['has_conflicts'] is False
+        assert data['total_conflicts'] == 0
+        assert data['conflicts'] == []
+
+    def test_validate_board_with_row_conflict(self, client):
+        """Test validate endpoint with row conflict."""
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 5
+        board[0][1] = 5  # Duplicate in row
+        
+        response = client.post(
+            '/validate',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['has_conflicts'] is True
+        assert data['total_conflicts'] == 2
+        assert len(data['conflicts']) == 2
+        assert [0, 0] in data['conflicts']
+        assert [0, 1] in data['conflicts']
+        # JSON converts dict keys to strings, so check for '0' instead of 0
+        assert '0' in data['row_conflicts']
+
+    def test_validate_board_with_column_conflict(self, client):
+        """Test validate endpoint with column conflict."""
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 3
+        board[1][0] = 3  # Duplicate in column
+        
+        response = client.post(
+            '/validate',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['has_conflicts'] is True
+        assert data['total_conflicts'] == 2
+        assert [0, 0] in data['conflicts']
+        assert [1, 0] in data['conflicts']
+        # JSON converts dict keys to strings, so check for '0' instead of 0
+        assert '0' in data['column_conflicts']
+
+    def test_validate_board_with_box_conflict(self, client):
+        """Test validate endpoint with box conflict."""
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 2
+        board[1][1] = 2  # Duplicate in same 3x3 box
+        
+        response = client.post(
+            '/validate',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['has_conflicts'] is True
+        assert data['total_conflicts'] == 2
+        assert [0, 0] in data['conflicts']
+        assert [1, 1] in data['conflicts']
+        # JSON converts dict keys to strings, so check for '0' instead of 0
+        assert '0' in data['box_conflicts']
+
+    def test_validate_board_missing_board_field(self, client):
+        """Test validate endpoint with missing board field."""
+        response = client.post(
+            '/validate',
+            data=json.dumps({}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_validate_board_invalid_size(self, client):
+        """Test validate endpoint with wrong board size."""
+        board = [[0]*8 for _ in range(8)]  # 8x8 instead of 9x9
+        
+        response = client.post(
+            '/validate',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_validate_board_invalid_cell_value(self, client):
+        """Test validate endpoint with invalid cell value."""
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 10  # Invalid value > 9
+        
+        response = client.post(
+            '/validate',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_validate_board_returns_correct_format(self, client):
+        """Test that validate endpoint returns correct response format."""
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 1
+        
+        response = client.post(
+            '/validate',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'has_conflicts' in data
+        assert 'conflicts' in data
+        assert 'row_conflicts' in data
+        assert 'column_conflicts' in data
+        assert 'box_conflicts' in data
+        assert 'total_conflicts' in data
+        assert isinstance(data['conflicts'], list)
+        assert isinstance(data['row_conflicts'], dict)
+        assert isinstance(data['column_conflicts'], dict)
+        assert isinstance(data['box_conflicts'], dict)
+
+
 class TestFlaskConfiguration:
     """Tests for Flask app configuration."""
 
@@ -186,6 +332,7 @@ class TestFlaskConfiguration:
         assert '/' in routes
         assert '/new' in routes
         assert '/check' in routes
+        assert '/validate' in routes
 
     def test_app_blueprint_registered(self, flask_app):
         """Test that routes blueprint is registered."""
