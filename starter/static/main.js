@@ -77,9 +77,8 @@ async function validateBoard() {
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
   boardDiv.innerHTML = '';
+  
   for (let i = 0; i < SIZE; i++) {
-    const rowDiv = document.createElement('div');
-    rowDiv.className = 'sudoku-row';
     for (let j = 0; j < SIZE; j++) {
       const input = document.createElement('input');
       input.type = 'text';
@@ -88,6 +87,16 @@ function createBoardElement() {
       input.dataset.row = i;
       input.dataset.col = j;
       input.setAttribute('aria-label', `Row ${i + 1}, Column ${j + 1}`);
+      
+      // Determine 3x3 block colors (alternating)
+      const blockRow = Math.floor(i / 3);
+      const blockCol = Math.floor(j / 3);
+      if ((blockRow + blockCol) % 2 === 0) {
+        input.classList.add('cell-light');
+      } else {
+        input.classList.add('cell-dark');
+      }
+      
       input.addEventListener('input', (e) => {
         // Prevent input if cell is locked
         const cellKey = `${i}-${j}`;
@@ -149,13 +158,13 @@ function createBoardElement() {
         const nextInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
         if (nextInput) nextInput.focus();
       });
-        // Validate board after input (debounced)
-        clearTimeout(validationTimeout);
-        validationTimeout = setTimeout(validateBoard, 200);
-      });
-      rowDiv.appendChild(input);
+      
+      // Validate board after input (debounced)
+      clearTimeout(validationTimeout);
+      validationTimeout = setTimeout(validateBoard, 200);
+      
+      boardDiv.appendChild(input);
     }
-    boardDiv.appendChild(rowDiv);
   }
 }
 
