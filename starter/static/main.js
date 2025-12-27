@@ -5,6 +5,9 @@ let gameId = null;
 let lockedCells = new Set();
 let conflictCells = new Set();
 let validationTimeout = null;
+let gameStartTime = null;
+let currentDifficulty = 'medium';
+let hintsUsed = 0;
 
 function getCurrentBoard() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -128,8 +131,14 @@ async function newGame() {
   const res = await fetch(`/new?difficulty=${difficulty}`);
   const data = await res.json();
   gameId = data.game_id;
+  currentDifficulty = difficulty;
+  gameStartTime = Date.now();
+  hintsUsed = 0;
+  updateHintCounter();
+  document.getElementById('hint-btn').disabled = false;
   renderPuzzle(data.puzzle);
   document.getElementById('message').innerText = '';
+  closeCongratulationsModal();
 }
 
 async function checkComplete() {
@@ -145,6 +154,8 @@ async function checkComplete() {
     const data = await res.json();
     
     if (data.is_complete) {
+      // Disable hint button when puzzle is complete
+      document.getElementById('hint-btn').disabled = true;
       showCongratulationsModal();
     }
   } catch (error) {
@@ -152,13 +163,24 @@ async function checkComplete() {
   }
 }
 
+function updateHintCounter() {
+  document.getElementById('hint-counter').textContent = `Hints: ${hintsUsed}`;
+}
+
 function showCongratulationsModal() {
   const modal = document.getElementById('congratulations-modal');
-  const messageEl = document.getElementById('modal-message');
-  const timeEl = document.getElementById('modal-time');
   
-  messageEl.textContent = 'You have successfully completed the puzzle!';
-  timeEl.textContent = 'Great job! You solved it!';
+  // Calculate elapsed time
+  const elapsedMs = Date.now() - gameStartTime;
+  const minutes = Math.floor(elapsedMs / 60000);
+  const seconds = Math.floor((elapsedMs % 60000) / 1000);
+  const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  
+  // Update modal content with game stats
+  document.getElementById('modal-time').textContent = timeString;
+  document.getElementById('modal-difficulty').textContent = 
+    currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
+  document.getElementById('modal-hints').textContent = hintsUsed.toString();
   
   modal.classList.add('show');
 }
@@ -166,6 +188,52 @@ function showCongratulationsModal() {
 function closeCongratulationsModal() {
   const modal = document.getElementById('congratulations-modal');
   modal.classList.remove('show');
+}
+
+async function getHint() {
+  const board = getCurrentBoard();
+  
+  try {
+    const res = await fetch('/hint', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({board, game_id: gameId})
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      // Fill the cell with the hint value
+      const boardDiv = document.getElementById('sudoku-board');
+      const inputs = boardDiv.getElementsByTagName('input');
+      const idx = data.row * SIZE + data.col;
+      const inp = inputs[idx];
+      
+      if (inp) {
+        inp.value = data.value;
+        inp.disabled = true;
+        inp.className = 'sudoku-cell prefilled';
+        lockedCells.add(`${data.row}-${data.col}`);
+        
+        // Update hints counter
+        hintsUsed = data.hints_used;
+        updateHintCounter();
+        
+        // Clear any conflicts on this cell
+        inp.classList.remove('conflict');
+        
+        document.getElementById('message').innerText = `Hint revealed! (${data.hints_used} hints used)`;
+      }
+    } else {
+      const errorMsg = data.error || 'Failed to get hint';
+      document.getElementById('message').innerText = errorMsg;
+      document.getElementById('message').style.color = '#d32f2f';
+    }
+  } catch (error) {
+    console.error('Hint error:', error);
+    document.getElementById('message').innerText = 'Error getting hint';
+    document.getElementById('message').style.color = '#d32f2f';
+  }
 }
 
 async function checkSolution() {
@@ -215,6 +283,7 @@ async function checkSolution() {
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
+  document.getElementById('hint-btn').addEventListener('click', getHint);
   
   // Modal event listeners
   const modal = document.getElementById('congratulations-modal');

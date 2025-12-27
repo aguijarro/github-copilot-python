@@ -62,6 +62,42 @@ h1 {
     border-bottom: 3px solid #333;
 }
 
+.hint-section {
+    margin: 20px auto;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+
+.hint-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    background: #ff9800;
+    color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.hint-button:hover {
+    background: #f57c00;
+}
+
+.hint-button:disabled {
+    background: #bdbdbd;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.hint-counter {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ff9800;
+}
+
 .controls {
     margin: 20px auto;
 }
@@ -148,6 +184,26 @@ button:hover {
     position: relative;
 }
 
+.modal-content.celebration {
+    border: 3px solid #FFD700;
+    box-shadow: 0 8px 30px rgba(255, 215, 0, 0.4), 0 0 20px rgba(56, 142, 60, 0.2);
+    animation: celebration-pop 0.5s ease-out;
+}
+
+@keyframes celebration-pop {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 .close-btn {
     position: absolute;
     top: 15px;
@@ -157,6 +213,7 @@ button:hover {
     color: #999;
     cursor: pointer;
     transition: color 0.2s;
+    z-index: 10;
 }
 
 .close-btn:hover {
@@ -169,15 +226,39 @@ button:hover {
     text-align: center;
 }
 
+.modal-header.celebration-header {
+    background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
+    border-bottom: 3px solid #FFD700;
+    border-radius: 8px 8px 0 0;
+}
+
 .modal-header h2 {
     margin: 0;
     color: #388e3c;
     font-size: 28px;
 }
 
+.modal-header.celebration-header h2 {
+    color: #fff;
+    font-size: 32px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    margin-bottom: 5px;
+}
+
+.celebration-text {
+    color: #fff;
+    font-size: 16px;
+    margin: 0;
+    font-weight: 500;
+}
+
 .modal-body {
     padding: 30px 20px;
     text-align: center;
+}
+
+.modal-body.celebration-body {
+    background: linear-gradient(to bottom, #f0f8f0, #ffffff);
 }
 
 .modal-body p {
@@ -188,9 +269,38 @@ button:hover {
 
 .modal-stats {
     margin-top: 20px;
-    padding: 15px;
+    padding: 20px;
     background-color: #f5f5f5;
-    border-radius: 4px;
+    border-radius: 8px;
+    border: 2px solid #e0f7e0;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #e0e0e0;
+    font-size: 16px;
+}
+
+.stat-item:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-weight: 600;
+    color: #388e3c;
+    flex: 1;
+    text-align: left;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #1565c0;
+    font-size: 18px;
+    flex: 1;
+    text-align: right;
 }
 
 .modal-stats p {
@@ -205,6 +315,12 @@ button:hover {
     border-top: 2px solid #e0e0e0;
 }
 
+.modal-footer.celebration-footer {
+    background-color: #f9f9f9;
+    border-top: 3px solid #FFD700;
+    border-radius: 0 0 8px 8px;
+}
+
 .modal-btn {
     padding: 12px 30px;
     font-size: 16px;
@@ -213,9 +329,23 @@ button:hover {
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s;
 }
 
 .modal-btn:hover {
     background-color: #2e7d32;
+}
+
+.modal-btn.celebration-btn {
+    background: linear-gradient(135deg, #388e3c 0%, #4caf50 100%);
+    padding: 14px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
+}
+
+.modal-btn.celebration-btn:hover {
+    background: linear-gradient(135deg, #2e7d32 0%, #388e3c 100%);
+    box-shadow: 0 6px 16px rgba(56, 142, 60, 0.5);
+    transform: translateY(-2px);
 }

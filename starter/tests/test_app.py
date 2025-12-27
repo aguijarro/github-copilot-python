@@ -427,6 +427,152 @@ class TestCheckCompleteRoute:
         assert isinstance(data['message'], str)
 
 
+class TestHintRoute:
+    """Tests for the /hint endpoint."""
+
+    def test_hint_returns_cell_position_and_value(self, client):
+        """Test that hint endpoint returns cell position and correct value."""
+        # Get a new game
+        new_game_res = client.get('/new?clues=30')
+        new_game_data = json.loads(new_game_res.data)
+        game_id = new_game_data['game_id']
+        puzzle = new_game_data['puzzle']
+        
+        # Make hint request
+        response = client.post(
+            '/hint',
+            data=json.dumps({'board': puzzle, 'game_id': game_id}),
+            content_type='application/json',
+        )
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'row' in data
+        assert 'col' in data
+        assert 'value' in data
+        assert 'hints_used' in data
+        assert 0 <= data['row'] < 9
+        assert 0 <= data['col'] < 9
+        assert 1 <= data['value'] <= 9
+        assert data['hints_used'] == 1
+
+    def test_hint_fills_empty_cell_only(self, client):
+        """Test that hint endpoint only fills empty cells."""
+        # Get a new game
+        new_game_res = client.get('/new?clues=30')
+        new_game_data = json.loads(new_game_res.data)
+        game_id = new_game_data['game_id']
+        puzzle = new_game_data['puzzle']
+        
+        # Find an empty cell to verify hint fills empty cells
+        empty_cells = [
+            (i, j) for i in range(9) for j in range(9)
+            if puzzle[i][j] == 0
+        ]
+        
+        assert len(empty_cells) > 0, "Puzzle should have empty cells"
+        
+        response = client.post(
+            '/hint',
+            data=json.dumps({'board': puzzle, 'game_id': game_id}),
+            content_type='application/json',
+        )
+        
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        # The hinted cell should have been empty
+        assert puzzle[data['row']][data['col']] == 0
+
+    def test_multiple_hints_increment_counter(self, client):
+        """Test that multiple hints increment the hints_used counter."""
+        # Get a new game
+        new_game_res = client.get('/new?clues=25')
+        new_game_data = json.loads(new_game_res.data)
+        game_id = new_game_data['game_id']
+        board = [row[:] for row in new_game_data['puzzle']]
+        
+        # Get first hint
+        res1 = client.post(
+            '/hint',
+            data=json.dumps({'board': board, 'game_id': game_id}),
+            content_type='application/json',
+        )
+        data1 = json.loads(res1.data)
+        assert data1['hints_used'] == 1
+        
+        # Update board with first hint
+        board[data1['row']][data1['col']] = data1['value']
+        
+        # Get second hint
+        res2 = client.post(
+            '/hint',
+            data=json.dumps({'board': board, 'game_id': game_id}),
+            content_type='application/json',
+        )
+        data2 = json.loads(res2.data)
+        assert data2['hints_used'] == 2
+
+    def test_hint_missing_board_field(self, client):
+        """Test that hint endpoint validates board field."""
+        response = client.post(
+            '/hint',
+            data=json.dumps({}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_hint_invalid_board_size(self, client):
+        """Test that hint endpoint validates board size."""
+        board = [[0]*8 for _ in range(9)]
+        
+        response = client.post(
+            '/hint',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_hint_invalid_cell_value(self, client):
+        """Test that hint endpoint validates cell values."""
+        new_game_res = client.get('/new?clues=30')
+        new_game_data = json.loads(new_game_res.data)
+        board = [row[:] for row in new_game_data['puzzle']]
+        board[0][0] = 15
+        
+        response = client.post(
+            '/hint',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_hint_no_empty_cells(self, client):
+        """Test that hint endpoint returns error when no empty cells remain."""
+        # Get a new game first to have a valid game_id
+        new_game_res = client.get('/new?clues=30')
+        new_game_data = json.loads(new_game_res.data)
+        game_id = new_game_data['game_id']
+        
+        # Create a complete board (no empty cells)
+        complete_board = [[i for i in range(1, 10)] for _ in range(9)]
+        
+        response = client.post(
+            '/hint',
+            data=json.dumps({'board': complete_board, 'game_id': game_id}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+        assert 'empty cells' in data['error'].lower()
+
+
 class TestFlaskConfiguration:
     """Tests for Flask app configuration."""
 
@@ -442,3 +588,4 @@ class TestFlaskConfiguration:
         assert '/check' in routes
         assert '/validate' in routes
         assert '/check-complete' in routes
+        assert '/hint' in routes

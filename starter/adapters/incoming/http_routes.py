@@ -250,4 +250,75 @@ def create_routes_blueprint(service: GameService) -> Blueprint:
             error = ErrorResponse(error='Internal server error', code='SERVER_ERROR')
             return jsonify(error.to_dict()), 500
     
+    @bp.route('/hint', methods=['POST'])
+    def get_hint():
+        """Get a hint by filling a random empty cell.
+        
+        Request body:
+            {
+                "board": 9x9 2D array of integers (0-9),
+                "game_id": optional game identifier
+            }
+        
+        Returns:
+            JSON with hint info:
+            {
+                "row": cell row index,
+                "col": cell column index,
+                "value": correct value for the cell,
+                "hints_used": total hints used so far
+            }
+        """
+        try:
+            data = request.get_json()
+            if not data:
+                raise ValidationError("Request body must be valid JSON")
+            
+            board = data.get('board')
+            if board is None:
+                raise ValidationError("Missing 'board' field")
+            
+            # Validate board structure
+            if not isinstance(board, list):
+                raise ValidationError("Board must be a list")
+            
+            if len(board) != 9:
+                raise ValidationError("Board must have 9 rows")
+            
+            for i, row in enumerate(board):
+                if not isinstance(row, list):
+                    raise ValidationError(f"Row {i} must be a list")
+                if len(row) != 9:
+                    raise ValidationError(f"Row {i} must have 9 columns")
+                for j, cell in enumerate(row):
+                    if not isinstance(cell, int):
+                        raise ValidationError(f"Cell [{i}][{j}] must be an integer")
+                    if not (0 <= cell <= 9):
+                        raise ValidationError(f"Cell [{i}][{j}] must be between 0 and 9")
+            
+            # Get game_id from request
+            game_id = data.get('game_id', 'default')
+            
+            # Get hint from service
+            hint_info = game_service.get_hint(game_id, board)
+            
+            return jsonify({
+                'row': hint_info['row'],
+                'col': hint_info['col'],
+                'value': hint_info['value'],
+                'hints_used': hint_info['hints_used']
+            }), 200
+        
+        except ValidationError as e:
+            error = ErrorResponse(error=str(e), code='VALIDATION_ERROR')
+            return jsonify(error.to_dict()), 400
+        
+        except GameNotFoundError as e:
+            error = ErrorResponse(error=str(e), code='GAME_NOT_FOUND')
+            return jsonify(error.to_dict()), 404
+        
+        except Exception as e:
+            error = ErrorResponse(error='Internal server error', code='SERVER_ERROR')
+            return jsonify(error.to_dict()), 500
+    
     return bp

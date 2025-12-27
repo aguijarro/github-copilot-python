@@ -1,7 +1,8 @@
 """Game service - orchestrates use cases."""
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Dict, Any
 from datetime import datetime
+import random
 
 from domain.models import GameState, SudokuBoard, CheckResult, BOARD_SIZE, EMPTY
 from domain.sudoku_game import find_incorrect_cells
@@ -119,3 +120,66 @@ class GameService:
         """
         game_state.updated_at = datetime.now()
         self.repository.save(game_id, game_state)
+    
+    def get_hint(self, game_id: str, current_board: List[List[int]]) -> Dict[str, Any]:
+        """Get a hint by filling a random empty cell with its solution value.
+        
+        Args:
+            game_id: Game identifier
+            current_board: Current board state (9x9 2D list)
+        
+        Returns:
+            Dict with keys:
+                - row: Row index of hinted cell
+                - col: Column index of hinted cell
+                - value: Correct value for that cell
+                - hints_used: Updated hint count
+        
+        Raises:
+            GameNotFoundError: If game not found
+            ValidationError: If no empty cells remain
+        """
+        # Load game state
+        game_state = self.repository.load(game_id)
+        if not game_state:
+            raise GameNotFoundError(f"Game {game_id} not found")
+        
+        # Find all empty cells
+        empty_cells = [
+            (row, col)
+            for row in range(BOARD_SIZE)
+            for col in range(BOARD_SIZE)
+            if current_board[row][col] == EMPTY
+        ]
+        
+        if not empty_cells:
+            raise ValidationError("No empty cells remaining - puzzle is complete!")
+        
+        # Select random empty cell
+        row, col = random.choice(empty_cells)
+        
+        # Get correct value from solution
+        solution_value = game_state.solution.get_cell(row, col)
+        
+        # Update current board with hint value
+        current_board[row][col] = solution_value
+        
+        # Update game state
+        game_state.current_board.set_cell(row, col, solution_value)
+        game_state.locked_cells.append((row, col))
+        game_state.moves += 1
+        
+        # Increment hints used counter
+        if not hasattr(game_state, 'hints_used'):
+            game_state.hints_used = 0
+        game_state.hints_used += 1
+        
+        # Save updated game state
+        self.save_game(game_id, game_state)
+        
+        return {
+            'row': row,
+            'col': col,
+            'value': solution_value,
+            'hints_used': game_state.hints_used
+        }
