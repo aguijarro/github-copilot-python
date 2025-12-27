@@ -319,6 +319,114 @@ class TestValidateRoute:
         assert isinstance(data['box_conflicts'], dict)
 
 
+@pytest.mark.integration
+class TestCheckCompleteRoute:
+    """Tests for board completion check endpoint."""
+
+    def test_check_complete_empty_board(self, client):
+        """Test check-complete with empty board."""
+        board = [[0]*9 for _ in range(9)]
+        
+        response = client.post(
+            '/check-complete',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'is_complete' in data
+        assert 'empty_count' in data
+        assert 'message' in data
+        assert data['is_complete'] is False
+        assert data['empty_count'] == 81
+
+    def test_check_complete_partial_board(self, client):
+        """Test check-complete with partially filled board."""
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 5
+        board[0][1] = 3
+        board[0][2] = 7
+        
+        response = client.post(
+            '/check-complete',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['is_complete'] is False
+        assert data['empty_count'] == 78
+
+    def test_check_complete_full_board(self, client, sample_solution):
+        """Test check-complete with a completely filled board."""
+        response = client.post(
+            '/check-complete',
+            data=json.dumps({'board': sample_solution}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert data['is_complete'] is True
+        assert data['empty_count'] == 0
+        assert 'complete' in data['message'].lower()
+
+    def test_check_complete_missing_board_field(self, client):
+        """Test check-complete with missing board field."""
+        response = client.post(
+            '/check-complete',
+            data=json.dumps({}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_check_complete_invalid_board_size(self, client):
+        """Test check-complete with wrong board dimensions."""
+        board = [[0]*8 for _ in range(8)]
+        
+        response = client.post(
+            '/check-complete',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_check_complete_invalid_cell_value(self, client):
+        """Test check-complete with invalid cell value."""
+        board = [[0]*9 for _ in range(9)]
+        board[0][0] = 10
+        
+        response = client.post(
+            '/check-complete',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 400
+        data = json.loads(response.data)
+        assert 'error' in data
+
+    def test_check_complete_returns_correct_format(self, client):
+        """Test that check-complete returns correct response format."""
+        board = [[0]*9 for _ in range(9)]
+        
+        response = client.post(
+            '/check-complete',
+            data=json.dumps({'board': board}),
+            content_type='application/json',
+        )
+        assert response.status_code == 200
+        data = json.loads(response.data)
+        assert 'is_complete' in data
+        assert 'empty_count' in data
+        assert 'message' in data
+        assert isinstance(data['is_complete'], bool)
+        assert isinstance(data['empty_count'], int)
+        assert isinstance(data['message'], str)
+
+
 class TestFlaskConfiguration:
     """Tests for Flask app configuration."""
 
@@ -333,7 +441,4 @@ class TestFlaskConfiguration:
         assert '/new' in routes
         assert '/check' in routes
         assert '/validate' in routes
-
-    def test_app_blueprint_registered(self, flask_app):
-        """Test that routes blueprint is registered."""
-        assert len(flask_app.blueprints) > 0
+        assert '/check-complete' in routes

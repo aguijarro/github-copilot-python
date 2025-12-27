@@ -183,4 +183,71 @@ def create_routes_blueprint(service: GameService) -> Blueprint:
             error = ErrorResponse(error='Internal server error', code='SERVER_ERROR')
             return jsonify(error.to_dict()), 500
     
+    @bp.route('/check-complete', methods=['POST'])
+    def check_complete():
+        """Check if board is completely filled.
+        
+        Request body:
+            {
+                "board": 9x9 2D array of integers (0-9)
+            }
+        
+        Returns:
+            JSON with completion status:
+            {
+                "is_complete": boolean,
+                "empty_count": number of empty cells,
+                "message": status message
+            }
+        """
+        try:
+            data = request.get_json()
+            if not data:
+                raise ValidationError("Request body must be valid JSON")
+            
+            board = data.get('board')
+            if board is None:
+                raise ValidationError("Missing 'board' field")
+            
+            # Validate board structure
+            if not isinstance(board, list):
+                raise ValidationError("Board must be a list")
+            
+            if len(board) != 9:
+                raise ValidationError("Board must have 9 rows")
+            
+            for i, row in enumerate(board):
+                if not isinstance(row, list):
+                    raise ValidationError(f"Row {i} must be a list")
+                if len(row) != 9:
+                    raise ValidationError(f"Row {i} must have 9 columns")
+                for j, cell in enumerate(row):
+                    if not isinstance(cell, int):
+                        raise ValidationError(f"Cell [{i}][{j}] must be an integer")
+                    if not (0 <= cell <= 9):
+                        raise ValidationError(f"Cell [{i}][{j}] must be between 0 and 9")
+            
+            # Check board completion using validator
+            completion_result = validator.check_completion(board)
+            
+            message = ""
+            if completion_result.is_complete:
+                message = "Board is complete!"
+            else:
+                message = f"{completion_result.empty_count} cells remaining"
+            
+            return jsonify({
+                'is_complete': completion_result.is_complete,
+                'empty_count': completion_result.empty_count,
+                'message': message
+            }), 200
+        
+        except ValidationError as e:
+            error = ErrorResponse(error=str(e), code='VALIDATION_ERROR')
+            return jsonify(error.to_dict()), 400
+        
+        except Exception as e:
+            error = ErrorResponse(error='Internal server error', code='SERVER_ERROR')
+            return jsonify(error.to_dict()), 500
+    
     return bp

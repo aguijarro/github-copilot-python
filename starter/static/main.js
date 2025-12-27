@@ -132,6 +132,42 @@ async function newGame() {
   document.getElementById('message').innerText = '';
 }
 
+async function checkComplete() {
+  const board = getCurrentBoard();
+  
+  try {
+    const res = await fetch('/check-complete', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({board})
+    });
+    
+    const data = await res.json();
+    
+    if (data.is_complete) {
+      showCongratulationsModal();
+    }
+  } catch (error) {
+    console.error('Completion check error:', error);
+  }
+}
+
+function showCongratulationsModal() {
+  const modal = document.getElementById('congratulations-modal');
+  const messageEl = document.getElementById('modal-message');
+  const timeEl = document.getElementById('modal-time');
+  
+  messageEl.textContent = 'You have successfully completed the puzzle!';
+  timeEl.textContent = 'Great job! You solved it!';
+  
+  modal.classList.add('show');
+}
+
+function closeCongratulationsModal() {
+  const modal = document.getElementById('congratulations-modal');
+  modal.classList.remove('show');
+}
+
 async function checkSolution() {
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
@@ -168,16 +204,38 @@ async function checkSolution() {
   if (incorrect.size === 0) {
     msg.style.color = '#388e3c';
     msg.innerText = 'Congratulations! You solved it!';
+    checkComplete();
   } else {
     msg.style.color = '#d32f2f';
     msg.innerText = 'Some cells are incorrect.';
   }
 }
 
-// Wire buttons
+// Wire buttons and modal events
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
+  
+  // Modal event listeners
+  const modal = document.getElementById('congratulations-modal');
+  const closeBtn = document.querySelector('.close-btn');
+  const playAgainBtn = document.getElementById('play-again-btn');
+  
+  closeBtn.addEventListener('click', () => {
+    closeCongratulationsModal();
+  });
+  
+  playAgainBtn.addEventListener('click', () => {
+    closeCongratulationsModal();
+    newGame();
+  });
+  
+  window.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      closeCongratulationsModal();
+    }
+  });
+  
   // initialize
   newGame();
 });
