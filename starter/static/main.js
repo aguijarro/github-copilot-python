@@ -8,6 +8,8 @@ let validationTimeout = null;
 let gameStartTime = null;
 let currentDifficulty = 'medium';
 let hintsUsed = 0;
+let checkHighlightTimeout = null;
+let checkConflictCells = new Set();
 
 function getCurrentBoard() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -167,6 +169,81 @@ function updateHintCounter() {
   document.getElementById('hint-counter').textContent = `Hints: ${hintsUsed}`;
 }
 
+async function checkConflicts() {
+  const board = getCurrentBoard();
+  
+  try {
+    const res = await fetch('/validate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({board})
+    });
+    
+    const data = await res.json();
+    
+    // Clear any previous highlight timeout
+    if (checkHighlightTimeout) {
+      clearTimeout(checkHighlightTimeout);
+    }
+    
+    // Clear previous check highlights
+    checkConflictCells.forEach(cellKey => {
+      const [row, col] = cellKey.split('-').map(Number);
+      const idx = row * SIZE + col;
+      const boardDiv = document.getElementById('sudoku-board');
+      const inputs = boardDiv.getElementsByTagName('input');
+      const inp = inputs[idx];
+      if (inp) {
+        inp.classList.remove('check-conflict');
+      }
+    });
+    checkConflictCells.clear();
+    
+    // Add new check highlights
+    if (data.has_conflicts && data.conflicts) {
+      data.conflicts.forEach(([row, col]) => {
+        const cellKey = `${row}-${col}`;
+        checkConflictCells.add(cellKey);
+        const idx = row * SIZE + col;
+        const boardDiv = document.getElementById('sudoku-board');
+        const inputs = boardDiv.getElementsByTagName('input');
+        const inp = inputs[idx];
+        if (inp) {
+          inp.classList.add('check-conflict');
+        }
+      });
+      
+      // Display message
+      const conflictCount = data.conflicts.length;
+      document.getElementById('message').innerText = `Found ${conflictCount} conflict(s)!`;
+      document.getElementById('message').style.color = '#ff9800';
+      
+      // Clear highlights after 2 seconds
+      checkHighlightTimeout = setTimeout(() => {
+        checkConflictCells.forEach(cellKey => {
+          const [row, col] = cellKey.split('-').map(Number);
+          const idx = row * SIZE + col;
+          const boardDiv = document.getElementById('sudoku-board');
+          const inputs = boardDiv.getElementsByTagName('input');
+          const inp = inputs[idx];
+          if (inp) {
+            inp.classList.remove('check-conflict');
+          }
+        });
+        checkConflictCells.clear();
+        document.getElementById('message').innerText = '';
+      }, 2000);
+    } else {
+      document.getElementById('message').innerText = 'No conflicts found! Keep going! ✓';
+      document.getElementById('message').style.color = '#388e3c';
+    }
+  } catch (error) {
+    console.error('Check error:', error);
+    document.getElementById('message').innerText = 'Error checking board';
+    document.getElementById('message').style.color = '#d32f2f';
+  }
+}
+
 function showCongratulationsModal() {
   const modal = document.getElementById('congratulations-modal');
   
@@ -282,6 +359,7 @@ async function checkSolution() {
 // Wire buttons and modal events
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
+  document.getElementById('check-btn').addEventListener('click', checkConflicts);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   document.getElementById('hint-btn').addEventListener('click', getHint);
   
