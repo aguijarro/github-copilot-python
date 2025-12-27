@@ -32,8 +32,8 @@
   <div id="timer" class="timer">⏱️ 00:00</div>
   <div id="sudoku-board"></div>
   <div class="hint-section">
-    <button id="hint-btn" class="hint-button">💡 Hint</button>
-    <span id="hint-counter" class="hint-counter">Hints: 0</span>
+    <button id="hint-btn" class="hint-button" aria-label="Get a hint for the current puzzle" aria-disabled="false">💡 Hint</button>
+    <span id="hint-counter" class="hint-counter" aria-live="polite" aria-atomic="true">Hints: 0</span>
   </div>
   <div class="controls">
     <div class="control-group">
@@ -45,15 +45,15 @@
       </select>
     </div>
     <div class="control-group">
-      <button id="new-game">New Game</button>
-      <button id="check-btn">Check</button>
-      <button id="check-solution">Check Solution</button>
+      <button id="new-game" aria-label="Start a new puzzle game">New Game</button>
+      <button id="check-btn" aria-label="Check your current entries for errors">Check</button>
+      <button id="check-solution" aria-label="Check if the current puzzle solution is correct">Check Solution</button>
     </div>
-    <span id="message"></span>
+    <span id="message" aria-live="assertive" aria-atomic="true" role="alert"></span>
   </div>
   <div id="congratulations-modal" class="modal">
     <div class="modal-content celebration">
-      <span class="close-btn">&times;</span>
+      <button class="close-btn" aria-label="Close congratulations modal" type="button">&times;</button>
       <div class="modal-header celebration-header">
         <h2>🎉 Congratulations! 🎉</h2>
         <p class="celebration-text">You solved the puzzle!</p>
@@ -75,13 +75,13 @@
         </div>
       </div>
       <div class="modal-footer celebration-footer">
-        <button id="play-again-btn" class="modal-btn celebration-btn">🎮 Play Again</button>
+        <button id="play-again-btn" class="modal-btn celebration-btn" aria-label="Start a new game after celebration">🎮 Play Again</button>
       </div>
     </div>
   </div>
   <div id="name-input-modal" class="modal">
     <div class="modal-content name-input">
-      <span class="close-btn">&times;</span>
+      <button class="close-btn" aria-label="Close name input modal" type="button">&times;</button>
       <div class="modal-header name-input-header">
         <h2>📝 Save Your Score</h2>
         <p class="modal-text">Enter your name to save your score</p>
@@ -93,18 +93,21 @@
           class="name-input-field" 
           placeholder="Enter your name (1-20 characters)"
           maxlength="20"
+          aria-label="Player name input, maximum 20 characters"
+          aria-describedby="name-error"
+          autocomplete="off"
         />
         <div id="name-error" class="name-error"></div>
       </div>
       <div class="modal-footer name-input-footer">
-        <button id="cancel-name-btn" class="modal-btn cancel-btn">Cancel</button>
-        <button id="submit-name-btn" class="modal-btn submit-btn">Save Score</button>
+        <button id="cancel-name-btn" class="modal-btn cancel-btn" aria-label="Cancel and do not save score">Cancel</button>
+        <button id="submit-name-btn" class="modal-btn submit-btn" aria-label="Submit player name and save score" disabled>Save Score</button>
       </div>
     </div>
   </div>
   <div id="scoreboard-section" class="scoreboard-section">
     <h2>🏆 Leaderboard</h2>
-    <table class="scoreboard-table">
+    <table class="scoreboard-table" aria-label="Top 10 scores leaderboard" role="table">
       <thead>
         <tr>
           <th>Rank</th>

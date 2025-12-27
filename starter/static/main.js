@@ -87,6 +87,7 @@ function createBoardElement() {
       input.className = 'sudoku-cell';
       input.dataset.row = i;
       input.dataset.col = j;
+      input.setAttribute('aria-label', `Row ${i + 1}, Column ${j + 1}`);
       input.addEventListener('input', (e) => {
         // Prevent input if cell is locked
         const cellKey = `${i}-${j}`;
@@ -98,6 +99,56 @@ function createBoardElement() {
         const val = e.target.value.replace(/[^1-9]/g, '');
         e.target.value = val;
         
+        // Auto-move to next cell if value entered
+        if (val) {
+          const nextCol = j + 1;
+          if (nextCol < SIZE) {
+            const nextInput = document.querySelector(`input[data-row="${i}"][data-col="${nextCol}"]`);
+            if (nextInput) nextInput.focus();
+          }
+        }
+        
+        validateCell(i, j);
+      });
+      
+      // Add arrow key navigation
+      input.addEventListener('keydown', (e) => {
+        const row = parseInt(e.target.dataset.row);
+        const col = parseInt(e.target.dataset.col);
+        
+        let nextRow = row;
+        let nextCol = col;
+        
+        switch(e.key) {
+          case 'ArrowUp':
+            e.preventDefault();
+            nextRow = (row - 1 + SIZE) % SIZE;
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            nextRow = (row + 1) % SIZE;
+            break;
+          case 'ArrowLeft':
+            e.preventDefault();
+            nextCol = (col - 1 + SIZE) % SIZE;
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            nextCol = (col + 1) % SIZE;
+            break;
+          case 'Backspace':
+          case 'Delete':
+            e.preventDefault();
+            e.target.value = '';
+            validateCell(row, col);
+            return;
+          default:
+            return;
+        }
+        
+        const nextInput = document.querySelector(`input[data-row="${nextRow}"][data-col="${nextCol}"]`);
+        if (nextInput) nextInput.focus();
+      });
         // Validate board after input (debounced)
         clearTimeout(validationTimeout);
         validationTimeout = setTimeout(validateBoard, 200);
@@ -321,10 +372,12 @@ function showNameInputModal() {
   const modal = document.getElementById('name-input-modal');
   const input = document.getElementById('player-name-input');
   const errorDiv = document.getElementById('name-error');
+  const submitBtn = document.getElementById('submit-name-btn');
   
   // Clear previous input and error
   input.value = '';
   errorDiv.textContent = '';
+  submitBtn.disabled = true;
   input.focus();
   
   modal.classList.add('show');
@@ -554,6 +607,23 @@ window.addEventListener('load', () => {
     if (event.key === 'Enter') {
       const playerName = playerNameInput.value;
       submitScore(playerName);
+    }
+  });
+
+  // Enable/disable submit button based on name validation
+  playerNameInput.addEventListener('input', (event) => {
+    const validation = validatePlayerName(event.target.value);
+    submitNameBtn.disabled = !validation.valid;
+    submitNameBtn.setAttribute('aria-disabled', !validation.valid);
+  });
+  
+  playerNameInput.addEventListener('change', (event) => {
+    const validation = validatePlayerName(event.target.value);
+    if (!validation.valid) {
+      document.getElementById('name-error').textContent = validation.error;
+      document.getElementById('name-error').setAttribute('role', 'alert');
+    } else {
+      document.getElementById('name-error').textContent = '';
     }
   });
   
